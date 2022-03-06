@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Markovnikov</title>
+		<link rel="stylesheet" href="style.css">
+	</head>
+	<body>
+		<script>
+			var charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,-+/=\n"
+			var depth = 3
+			var mark = {}
+			
+			function setup_depth(d, a=mark, i=d){
+				if(d > 0){
+					a[i] = {}
+					if(d == 1){
+						a[i].sum = 0
+					}
+					for(let c of charset){
+						setup_depth(d-1, a[i], c)
+					}
+				}else{
+					a[i] = 0
+				}
+			}
+			
+			function setup_depths(){
+				for(let i = 1; i <= depth; i++){
+					setup_depth(i)
+				}
+			}
+			
+			function validate_text(text){
+				var r = ""
+				for(let c of text){
+					if(charset.includes(c)){
+						r += c
+					}
+				}
+				if(r.slice(-1) != "\n"){
+					r += "\n"
+				}
+				return r
+			}
+			
+			function teach_depth(text, d){
+				if(text.length < d){
+					return false
+				}
+				
+				var a = mark[d]
+				for(let i = 0; i < d; i++){
+					if(i == d-1){
+						a.sum++
+						a[text[i]]++
+					}else{
+						a = a[text[i]]
+					}
+				}
+				return true
+			}
+			
+			function teach_text(text){
+				text = validate_text(text)
+				
+				for(let i = 1; i < depth && teach_depth(text, i); i++){}
+				while(teach_depth(text, depth)){
+					text = text.substr(1);
+				}
+			}
+			
+			function random_choice(a){
+				var v = Math.floor(Math.random() * (a.sum)) + 1
+				var ln = a.length
+				for(let c of charset){
+					v -= a[c]
+					if(v <= 0){
+						return c
+					}
+				}
+				return " "
+			}
+			
+			function generate_depth(text, d){
+				var ln = text.length
+				var a = mark[d]
+				for(let i = ln-d+1; i < ln; i++){
+					a = a[text[i]]
+				}
+				
+				return random_choice(a)
+			}
+			
+			function generate_text(){
+				var text = ""
+				for(let i = 1; i < depth; i++){
+					text += generate_depth(text, i)
+				}
+				
+				while(text.slice(-1) != "\n"){
+					text += generate_depth(text, depth)
+				}
+				return text
+			}
+			
+			setup_depths()
+		</script>
+		
+		<script>
+			function add_to_chat(text, bot)
+			{
+				var div = document.createElement("div")
+				div.innerHTML = text
+				if(bot){
+					div.classList.add("bot")
+				}else{
+					div.classList.add("user")
+				}
+				chatbox.appendChild(div)
+  				chatbox.scrollTop = chatbox.scrollHeight
+			}
+			
+			function respond(){
+				var response = generate_text()
+				add_to_chat(response, true)
+			}
+			
+			function send(){
+				var message = document.getElementById("message").value
+				add_to_chat(message, false)
+				document.getElementById("message").value = ""
+				if(message != ""){
+					teach_text(message)
+					respond()
+				}
+				return false
+			}
+		</script>
+		
+		<main>
+			<h1>Markovnikov</h1>
+			
+			<div id="chatbox">
+			</div>
+			
+			<form onsubmit = "return send()" method="POST">
+				<input type="text" name="message" id="message" autocomplete="off" placeholder="bunt andrei...">
+				<input type="submit" value="send">
+			</form>
+		</main>
+		
+		<script>
+			var chatbox = document.getElementById("chatbox")
+		</script>
+	</body>
+</html> 
